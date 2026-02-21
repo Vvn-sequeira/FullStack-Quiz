@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz Login | AI-Proctored Quiz</title>
+  <meta name="description" content="Login to the AI-Proctored Quiz System. Secure, monitored, and fair." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── Reset & Base ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --yellow: #FFE500;
+      --pink:   #FF3BFF;
+      --cyan:   #00D9FF;
+      --lime:   #00FF85;
+      --black:  #0a0a0a;
+      --white:  #FAFAFA;
+      --shadow: 6px 6px 0 var(--black);
+      --shadow-lg: 8px 8px 0 var(--black);
+    }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--white);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-image: repeating-linear-gradient(
+        0deg, transparent, transparent 39px, rgba(0,0,0,0.07) 39px, rgba(0,0,0,0.07) 40px
+      ), repeating-linear-gradient(
+        90deg, transparent, transparent 39px, rgba(0,0,0,0.07) 39px, rgba(0,0,0,0.07) 40px
+      );
+      padding: 20px;
+    }
+
+    /* ─── Layout ────────────────────────────────────────────── */
+    .page-wrap {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      max-width: 900px;
+      width: 100%;
+      border: 4px solid var(--black);
+      box-shadow: var(--shadow-lg);
+      background: var(--white);
+    }
+
+    /* Left panel */
+    .left-panel {
+      background: var(--black);
+      padding: 48px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .brand { color: var(--yellow); font-size: 28px; font-weight: 800; letter-spacing: -1px; text-transform: uppercase; }
+    .brand span { color: var(--pink); }
+    .tagline { color: var(--white); font-size: 14px; font-weight: 600; opacity: 0.7; margin-top: 8px; text-transform: uppercase; letter-spacing: 2px; }
+
+    .features { margin-top: 40px; display: flex; flex-direction: column; gap: 16px; }
+    .feature-item { display: flex; align-items: center; gap: 12px; }
+    .feature-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 3px solid; flex-shrink: 0; }
+    .feature-icon.yellow { border-color: var(--yellow); background: rgba(255,229,0,0.1); }
+    .feature-icon.pink   { border-color: var(--pink);   background: rgba(255,59,255,0.1); }
+    .feature-icon.cyan   { border-color: var(--cyan);   background: rgba(0,217,255,0.1); }
+    .feature-icon.lime   { border-color: var(--lime);   background: rgba(0,255,133,0.1); }
+    .feature-text { color: var(--white); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .bottom-tag { color: rgba(255,255,255,0.3); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
+
+    /* Right panel */
+    .right-panel { padding: 48px 40px; }
+
+    .tab-row { display: flex; gap: 0; margin-bottom: 32px; border: 3px solid var(--black); }
+    .tab-btn { flex: 1; padding: 12px; font-family: inherit; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; border: none; background: var(--white); color: var(--black); transition: background 0.15s; }
+    .tab-btn.active { background: var(--yellow); }
+    .tab-btn:first-child { border-right: 3px solid var(--black); }
+    .tab-btn:hover:not(.active) { background: #f0f0f0; }
+
+    h2.form-title { font-size: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.5px; margin-bottom: 24px; }
+
+    .form-group { margin-bottom: 18px; }
+    label { display: block; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; color: var(--black); }
+    input { width: 100%; padding: 12px 14px; border: 3px solid var(--black); background: var(--white); font-family: inherit; font-size: 15px; font-weight: 600; outline: none; transition: box-shadow 0.15s; }
+    input:focus { box-shadow: var(--shadow); }
+    input::placeholder { color: #aaa; font-weight: 500; }
+
+    .btn-primary { width: 100%; padding: 14px; background: var(--yellow); border: 3px solid var(--black); font-family: inherit; font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; box-shadow: var(--shadow); transition: transform 0.1s, box-shadow 0.1s; margin-top: 8px; }
+    .btn-primary:hover { transform: translate(-3px, -3px); box-shadow: 9px 9px 0 var(--black); }
+    .btn-primary:active { transform: translate(3px, 3px); box-shadow: 3px 3px 0 var(--black); }
+
+    .btn-pink { background: var(--pink) !important; }
+    .btn-cyan { background: var(--cyan) !important; }
+
+    .error-msg { background: var(--pink); border: 3px solid var(--black); padding: 10px 14px; font-size: 13px; font-weight: 700; color: var(--black); margin-top: 12px; display: none; }
+    .error-msg.show { display: block; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .reg-link { font-size: 13px; font-weight: 600; margin-top: 16px; text-align: center; }
+    .reg-link a { color: var(--black); font-weight: 800; text-decoration: underline; }
+
+    @media (max-width: 640px) {
+      .page-wrap { grid-template-columns: 1fr; }
+      .left-panel { display: none; }
+      .right-panel { padding: 32px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-wrap">
+  <!-- Left Panel -->
+  <div class="left-panel">
+    <div>
+      <div class="brand">Quiz<span>AI</span></div>
+      <div class="tagline">Proctored • Secure • Fair</div>
+
+      <div class="features">
+        <div class="feature-item">
+          <div class="feature-icon yellow">📷</div>
+          <div class="feature-text">Webcam Tracking</div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon pink">🎙️</div>
+          <div class="feature-text">Voice Monitoring</div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon cyan">🛡️</div>
+          <div class="feature-text">Tab-Switch Detection</div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon lime">⚡</div>
+          <div class="feature-text">Fullscreen Enforcement</div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-tag">AI-Proctored v1.0</div>
+  </div>
+
+  <!-- Right Panel -->
+  <div class="right-panel">
+    <!-- Tabs -->
+    <div class="tab-row">
+      <button class="tab-btn active" id="tab-student" onclick="switchTab('student')">Student</button>
+      <button class="tab-btn" id="tab-teacher" onclick="switchTab('teacher')">Teacher</button>
+    </div>
+
+    <!-- Student Login -->
+    <div class="tab-content active" id="content-student">
+      <h2 class="form-title">Student Login</h2>
+      <form id="student-login-form" onsubmit="handleStudentLogin(event)">
+        <div class="form-group">
+          <label for="student-univ">University Number</label>
+          <input type="text" id="student-univ" placeholder="e.g. CS2021001" required />
+        </div>
+        <div class="form-group">
+          <label for="student-pass">Password</label>
+          <input type="password" id="student-pass" placeholder="••••••••" required />
+        </div>
+        <button type="submit" class="btn-primary" id="student-login-btn">Login →</button>
+        <div class="error-msg" id="student-error"></div>
+      </form>
+      <div class="reg-link">New student? <a href="register.html">Register here</a></div>
+    </div>
+
+    <!-- Teacher Login -->
+    <div class="tab-content" id="content-teacher">
+      <h2 class="form-title">Teacher Login</h2>
+      <form id="teacher-login-form" onsubmit="handleTeacherLogin(event)">
+        <div class="form-group">
+          <label for="teacher-email">Email</label>
+          <input type="email" id="teacher-email" placeholder="admin@quiz.com" required />
+        </div>
+        <div class="form-group">
+          <label for="teacher-pass">Password</label>
+          <input type="password" id="teacher-pass" placeholder="••••••••" required />
+        </div>
+        <button type="submit" class="btn-primary btn-cyan" id="teacher-login-btn">Login →</button>
+        <div class="error-msg" id="teacher-error"></div>
+      </form>
+      <div class="reg-link" style="margin-top:12px; font-size:12px; color:#888;">Default: admin@quiz.com / admin123</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API = "http://localhost:8000";
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.getElementById('content-' + tab).classList.add('active');
+  }
+
+  function showError(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 4000);
+  }
+
+  function setLoading(btnId, loading) {
+    const btn = document.getElementById(btnId);
+    btn.textContent = loading ? 'Loading...' : (btnId === 'teacher-login-btn' ? 'Login →' : 'Login →');
+    btn.disabled = loading;
+  }
+
+  async function handleStudentLogin(e) {
+    e.preventDefault();
+    setLoading('student-login-btn', true);
+    const univ = document.getElementById('student-univ').value.trim();
+    const pass = document.getElementById('student-pass').value;
+
+    try {
+      const res = await fetch(`${API}/student/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ university_number: univ, password: pass })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Login failed');
+
+      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('role', data.role);
+      localStorage.setItem('name', data.name);
+      localStorage.setItem('univ', data.university_number);
+      window.location.href = 'dashboard.html';
+    } catch (err) {
+      showError('student-error', '❌ ' + err.message);
+    } finally {
+      setLoading('student-login-btn', false);
+    }
+  }
+
+  async function handleTeacherLogin(e) {
+    e.preventDefault();
+    setLoading('teacher-login-btn', true);
+    const email = document.getElementById('teacher-email').value.trim();
+    const pass = document.getElementById('teacher-pass').value;
+
+    try {
+      const res = await fetch(`${API}/teacher/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pass })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Login failed');
+
+      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('role', data.role);
+      localStorage.setItem('name', data.name);
+      window.location.href = 'admin.html';
+    } catch (err) {
+      showError('teacher-error', '❌ ' + err.message);
+    } finally {
+      setLoading('teacher-login-btn', false);
+    }
+  }
+
+  // Redirect if already logged in
+  if (localStorage.getItem('token')) {
+    const role = localStorage.getItem('role');
+    if (role === 'teacher') window.location.href = 'admin.html';
+    else window.location.href = 'dashboard.html';
+  }
+</script>
+</body>
+</html>

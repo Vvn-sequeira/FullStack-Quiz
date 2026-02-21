@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel | AI-Proctored Quiz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root { --yellow:#FFE500; --pink:#FF3BFF; --cyan:#00D9FF; --lime:#00FF85; --black:#0a0a0a; --white:#FAFAFA; --shadow:6px 6px 0 var(--black); }
+    body { font-family:'Space Grotesk',sans-serif; background:var(--white); min-height:100vh; display:flex; flex-direction:column; }
+
+    nav { background:var(--black); border-bottom:4px solid var(--black); padding:0 32px; display:flex; align-items:center; justify-content:space-between; height:64px; flex-shrink:0; }
+    .nav-brand { color:var(--yellow); font-size:22px; font-weight:800; text-transform:uppercase; }
+    .nav-brand span { color:var(--pink); }
+    .nav-right { display:flex; align-items:center; gap:16px; }
+    .admin-badge { background:var(--pink); color:var(--black); font-size:10px; font-weight:800; padding:3px 10px; text-transform:uppercase; letter-spacing:1px; border:2px solid var(--black); }
+    .btn-logout { background:var(--yellow); border:3px solid var(--black); padding:8px 16px; font-family:inherit; font-size:12px; font-weight:800; cursor:pointer; text-transform:uppercase; box-shadow:3px 3px 0 var(--black); transition:all 0.1s; }
+    .btn-logout:hover { transform:translate(-2px,-2px); box-shadow:5px 5px 0 var(--black); }
+
+    .app-layout { display:flex; flex:1; }
+
+    /* Sidebar nav */
+    .side-nav { width:220px; border-right:4px solid var(--black); background:var(--white); flex-shrink:0; }
+    .side-nav-item { display:flex; align-items:center; gap:12px; padding:16px 20px; border-bottom:3px solid var(--black); cursor:pointer; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; transition:background 0.1s; }
+    .side-nav-item:hover { background:#f0f0f0; }
+    .side-nav-item.active { background:var(--yellow); }
+    .side-nav-item span { font-size:18px; }
+
+    /* Content area */
+    .content-area { flex:1; padding:32px; overflow-y:auto; }
+
+    /* Section */
+    .section { display:none; }
+    .section.active { display:block; }
+    .section-header { margin-bottom:28px; }
+    .section-header h2 { font-size:32px; font-weight:800; text-transform:uppercase; letter-spacing:-1.5px; }
+    .section-header p { font-size:13px; font-weight:600; color:#666; margin-top:4px; text-transform:uppercase; letter-spacing:0.5px; }
+
+    /* Forms */
+    .form-card { border:4px solid var(--black); padding:28px; box-shadow:var(--shadow); max-width:540px; background:var(--white); margin-bottom:28px; }
+    .form-card h3 { font-size:16px; font-weight:800; text-transform:uppercase; letter-spacing:-0.5px; margin-bottom:20px; padding-bottom:12px; border-bottom:3px solid var(--black); }
+    .form-group { margin-bottom:16px; }
+    label { display:block; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:5px; }
+    input, select, textarea { width:100%; padding:11px 14px; border:3px solid var(--black); background:var(--white); font-family:inherit; font-size:14px; font-weight:600; outline:none; transition:box-shadow 0.15s; resize:vertical; }
+    input:focus, select:focus, textarea:focus { box-shadow:var(--shadow); }
+    input::placeholder, textarea::placeholder { color:#aaa; font-weight:500; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .btn { padding:12px 24px; border:3px solid var(--black); font-family:inherit; font-size:13px; font-weight:800; text-transform:uppercase; cursor:pointer; box-shadow:var(--shadow); transition:all 0.1s; }
+    .btn:hover { transform:translate(-2px,-2px); box-shadow:8px 8px 0 var(--black); }
+    .btn.yellow { background:var(--yellow); }
+    .btn.cyan { background:var(--cyan); }
+    .btn.lime { background:var(--lime); }
+    .btn.pink { background:var(--pink); }
+    .btn.full { width:100%; margin-top:8px; }
+
+    .msg { padding:10px 14px; border:3px solid var(--black); font-size:13px; font-weight:700; margin-top:12px; display:none; }
+    .msg.show { display:block; }
+    .msg.success { background:var(--lime); }
+    .msg.error { background:var(--pink); }
+
+    /* Quiz list */
+    .quiz-list { display:flex; flex-direction:column; gap:12px; }
+    .quiz-row { border:4px solid var(--black); padding:16px 20px; box-shadow:var(--shadow); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; cursor:pointer; transition:all 0.1s; }
+    .quiz-row:hover { transform:translate(-2px,-2px); box-shadow:8px 8px 0 var(--black); }
+    .quiz-row.selected { background:var(--yellow); }
+    .quiz-row-title { font-size:16px; font-weight:800; text-transform:uppercase; }
+    .quiz-row-meta { font-size:12px; font-weight:600; color:#666; text-transform:uppercase; }
+    .quiz-row-actions { display:flex; gap:8px; }
+    .btn-sm { padding:8px 16px; border:2px solid var(--black); font-family:inherit; font-size:11px; font-weight:800; text-transform:uppercase; cursor:pointer; transition:all 0.1s; }
+    .btn-sm:hover { transform:translate(-1px,-1px); box-shadow:3px 3px 0 var(--black); }
+
+    /* Attempts table */
+    .attempts-table { width:100%; border-collapse:collapse; border:4px solid var(--black); box-shadow:var(--shadow); }
+    .attempts-table th { background:var(--black); color:var(--yellow); padding:11px 14px; text-align:left; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:1.5px; }
+    .attempts-table td { padding:11px 14px; border-bottom:2px solid var(--black); font-size:13px; font-weight:600; }
+    .attempts-table tr:nth-child(even) td { background:#f7f7f7; }
+    .status-badge { display:inline-block; padding:2px 10px; font-size:10px; font-weight:800; text-transform:uppercase; border:2px solid var(--black); }
+    .status-badge.passed { background:var(--lime); }
+    .status-badge.failed { background:var(--pink); }
+    .status-badge.in { background:var(--cyan); }
+
+    .loader { padding:32px; text-align:center; font-weight:800; text-transform:uppercase; color:#888; font-size:13px; }
+    .empty { border:4px dashed #ccc; padding:40px; text-align:center; color:#888; font-weight:800; text-transform:uppercase; margin-top:8px; }
+
+    /* Access Code Box */
+    .access-code-box { background:var(--black); border:4px solid var(--black); padding:24px 28px; margin-top:16px; text-align:center; display:none; box-shadow:var(--shadow-lg); }
+    .access-code-box.show { display:block; animation:fadeIn 0.3s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+    .access-code-label { color:rgba(255,255,255,0.6); font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:2px; }
+    .access-code-value { color:var(--yellow); font-family:'Courier New',monospace; font-size:40px; font-weight:900; letter-spacing:10px; margin-top:10px; text-shadow:2px 2px 0 rgba(0,0,0,0.4); }
+    .access-code-hint { color:rgba(255,255,255,0.5); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-top:10px; }
+    .quiz-access-code { display:inline-block; background:var(--black); color:var(--yellow); font-family:'Courier New',monospace; font-size:13px; font-weight:900; padding:3px 12px; border:2px solid var(--black); letter-spacing:2px; margin-top:4px; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">Quiz<span>AI</span> Admin</div>
+  <div class="nav-right">
+    <span style="color:var(--white);font-size:13px;font-weight:700;" id="nav-name">—</span>
+    <div class="admin-badge">Teacher</div>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<div class="app-layout">
+  <!-- Side Nav -->
+  <div class="side-nav">
+    <div class="side-nav-item active" id="nav-quizzes" onclick="switchSection('quizzes')">
+      <span>📋</span> Quizzes
+    </div>
+    <div class="side-nav-item" id="nav-questions" onclick="switchSection('questions')">
+      <span>❓</span> Questions
+    </div>
+    <div class="side-nav-item" id="nav-attempts" onclick="switchSection('attempts')">
+      <span>📊</span> Attempts
+    </div>
+    <div class="side-nav-item" id="nav-leaderboard" onclick="window.location.href='leaderboard.html'">
+      <span>🏆</span> Leaderboard
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content-area">
+
+    <!-- ── Quizzes Section ─────────────────────────────── -->
+    <div class="section active" id="section-quizzes">
+      <div class="section-header">
+        <h2>Manage Quizzes</h2>
+        <p>Create and manage your quizzes</p>
+      </div>
+
+      <div class="form-card">
+        <h3>+ Create New Quiz</h3>
+        <div class="form-group">
+          <label for="quiz-title">Quiz Title</label>
+          <input type="text" id="quiz-title" placeholder="e.g. Midterm Exam 2024" />
+        </div>
+        <div class="form-group">
+          <label for="quiz-duration">Duration (minutes)</label>
+          <input type="number" id="quiz-duration" placeholder="30" min="1" max="300" />
+        </div>
+        <button class="btn yellow full" onclick="createQuiz()">Create Quiz →</button>
+        <div class="msg" id="create-quiz-msg"></div>
+
+        <!-- Access Code shown after creation -->
+        <div class="access-code-box" id="access-code-box">
+          <div class="access-code-label">🔑 Quiz Access Code — Share this with your students</div>
+          <div class="access-code-value" id="access-code-value">—</div>
+          <div class="access-code-hint">Students enter this code on their dashboard to join the quiz</div>
+        </div>
+      </div>
+
+      <div class="section-header" style="margin-top:32px;">
+        <h2 style="font-size:22px;">Existing Quizzes</h2>
+      </div>
+      <div id="quizzes-list" class="loader">Loading...</div>
+    </div>
+
+    <!-- ── Questions Section ───────────────────────────── -->
+    <div class="section" id="section-questions">
+      <div class="section-header">
+        <h2>Add Questions</h2>
+        <p>Select a quiz and add questions with options</p>
+      </div>
+
+      <div class="form-card">
+        <h3>Select Quiz</h3>
+        <div class="form-group">
+          <label>Quiz</label>
+          <select id="q-quiz-select"><option value="">Loading quizzes...</option></select>
+        </div>
+      </div>
+
+      <div class="form-card" id="add-question-card">
+        <h3>+ Add Question</h3>
+        <div class="form-group">
+          <label for="q-text">Question Text</label>
+          <textarea id="q-text" rows="3" placeholder="Enter your question here..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="q-a">Option A</label>
+            <input type="text" id="q-a" placeholder="Option A" />
+          </div>
+          <div class="form-group">
+            <label for="q-b">Option B</label>
+            <input type="text" id="q-b" placeholder="Option B" />
+          </div>
+          <div class="form-group">
+            <label for="q-c">Option C</label>
+            <input type="text" id="q-c" placeholder="Option C" />
+          </div>
+          <div class="form-group">
+            <label for="q-d">Option D</label>
+            <input type="text" id="q-d" placeholder="Option D" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="q-correct">Correct Answer</label>
+          <select id="q-correct">
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+          </select>
+        </div>
+        <button class="btn lime full" onclick="addQuestion()">Add Question →</button>
+        <div class="msg" id="add-q-msg"></div>
+      </div>
+    </div>
+
+    <!-- ── Attempts Section ────────────────────────────── -->
+    <div class="section" id="section-attempts">
+      <div class="section-header">
+        <h2>Quiz Attempts</h2>
+        <p>View all student submissions and violations</p>
+      </div>
+
+      <div class="form-card" style="max-width:400px;">
+        <h3>Select Quiz</h3>
+        <div class="form-group">
+          <label>Quiz</label>
+          <select id="a-quiz-select" onchange="loadAttempts()">
+            <option value="">Loading...</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="attempts-container" class="empty">Select a quiz to view attempts</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const API = "http://localhost:8000";
+  const token = localStorage.getItem('token');
+  const role  = localStorage.getItem('role');
+  const name  = localStorage.getItem('name');
+
+  if (!token || role !== 'teacher') window.location.href = 'login.html';
+  document.getElementById('nav-name').textContent = name || 'Teacher';
+
+  function authH() { return { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }; }
+  function logout() { localStorage.clear(); window.location.href = 'login.html'; }
+
+  function switchSection(s) {
+    document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.side-nav-item').forEach(el => el.classList.remove('active'));
+    document.getElementById('section-' + s).classList.add('active');
+    document.getElementById('nav-' + s).classList.add('active');
+  }
+
+  function showMsg(id, msg, type='success') {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.className = 'msg ' + type + ' show';
+    setTimeout(() => el.classList.remove('show'), 4000);
+  }
+
+  // ── Load quizzes ─────────────────────────────────────────
+  let allQuizzes = [];
+
+  async function loadQuizzes() {
+    const res = await fetch(`${API}/quiz/list`, { headers: authH() });
+    const data = await res.json();
+    allQuizzes = data.quizzes || [];
+
+    // Attempts section select
+    const attSel = document.getElementById('a-quiz-select');
+    const qSel = document.getElementById('q-quiz-select');
+    [attSel, qSel].forEach(sel => {
+      sel.innerHTML = '<option value="">Select a quiz...</option>';
+      allQuizzes.forEach(q => {
+        const opt = document.createElement('option');
+        opt.value = q._id;
+        opt.textContent = q.title;
+        sel.appendChild(opt);
+      });
+    });
+
+    // Quiz list
+    const listEl = document.getElementById('quizzes-list');
+    if (allQuizzes.length === 0) {
+      listEl.className = 'empty';
+      listEl.textContent = 'No quizzes yet. Create your first quiz above.';
+      return;
+    }
+    listEl.className = 'quiz-list';
+    listEl.innerHTML = allQuizzes.map(q => `
+      <div class="quiz-row" onclick="selectQuizForQuestions('${q._id}')">
+        <div>
+          <div class="quiz-row-title">${q.title}</div>
+          <div class="quiz-row-meta">⏱ ${q.duration_minutes} min &bull; Created ${new Date(q.created_at).toLocaleDateString()}</div>
+          <div class="quiz-access-code">${q.access_code || 'No Code'}</div>
+        </div>
+        <div class="quiz-row-actions">
+          <button class="btn-sm" style="background:var(--cyan);" onclick="event.stopPropagation();selectQuizForQuestions('${q._id}')">Add Questions</button>
+          <button class="btn-sm" style="background:var(--yellow);" onclick="event.stopPropagation();viewAttempts('${q._id}')">View Attempts</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function selectQuizForQuestions(qid) {
+    switchSection('questions');
+    document.getElementById('q-quiz-select').value = qid;
+  }
+
+  function viewAttempts(qid) {
+    switchSection('attempts');
+    document.getElementById('a-quiz-select').value = qid;
+    loadAttempts();
+  }
+
+  // ── Create Quiz ──────────────────────────────────────────
+  async function createQuiz() {
+    const title = document.getElementById('quiz-title').value.trim();
+    const duration = parseInt(document.getElementById('quiz-duration').value);
+    if (!title || !duration) return showMsg('create-quiz-msg', '❌ Fill all fields', 'error');
+
+    try {
+      const res = await fetch(`${API}/quiz/create`, {
+        method: 'POST', headers: authH(),
+        body: JSON.stringify({ title, duration_minutes: duration })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail);
+      showMsg('create-quiz-msg', '✅ Quiz created successfully!', 'success');
+
+      // Show access code prominently
+      document.getElementById('access-code-value').textContent = data.access_code;
+      document.getElementById('access-code-box').className = 'access-code-box show';
+
+      document.getElementById('quiz-title').value = '';
+      document.getElementById('quiz-duration').value = '';
+      loadQuizzes();
+    } catch (e) {
+      showMsg('create-quiz-msg', '❌ ' + e.message, 'error');
+    }
+  }
+
+  // ── Add Question ─────────────────────────────────────────
+  async function addQuestion() {
+    const qid = document.getElementById('q-quiz-select').value;
+    if (!qid) return showMsg('add-q-msg', '❌ Select a quiz first', 'error');
+
+    const payload = {
+      question_text: document.getElementById('q-text').value.trim(),
+      option_a: document.getElementById('q-a').value.trim(),
+      option_b: document.getElementById('q-b').value.trim(),
+      option_c: document.getElementById('q-c').value.trim(),
+      option_d: document.getElementById('q-d').value.trim(),
+      correct_option: document.getElementById('q-correct').value,
+    };
+
+    if (!payload.question_text || !payload.option_a || !payload.option_b || !payload.option_c || !payload.option_d)
+      return showMsg('add-q-msg', '❌ Fill all fields', 'error');
+
+    try {
+      const res = await fetch(`${API}/quiz/${qid}/add-question`, {
+        method: 'POST', headers: authH(), body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail);
+      showMsg('add-q-msg', '✅ Question added!', 'success');
+      ['q-text','q-a','q-b','q-c','q-d'].forEach(id => document.getElementById(id).value = '');
+    } catch (e) {
+      showMsg('add-q-msg', '❌ ' + e.message, 'error');
+    }
+  }
+
+  // ── Load Attempts ────────────────────────────────────────
+  async function loadAttempts() {
+    const qid = document.getElementById('a-quiz-select').value;
+    if (!qid) return;
+
+    document.getElementById('attempts-container').className = 'loader';
+    document.getElementById('attempts-container').textContent = 'Loading...';
+
+    try {
+      const res = await fetch(`${API}/quiz/${qid}/attempts`, { headers: authH() });
+      const data = await res.json();
+      const attempts = data.attempts || [];
+
+      if (attempts.length === 0) {
+        document.getElementById('attempts-container').className = 'empty';
+        document.getElementById('attempts-container').textContent = 'No attempts yet for this quiz.';
+        return;
+      }
+
+      const rows = attempts.map(a => {
+        const sCls = a.status === 'PASSED' ? 'passed' : a.status === 'FAILED' ? 'failed' : 'in';
+        return `<tr>
+          <td><strong>${a.student_name}</strong><br><span style="font-size:11px;color:#888;">${a.student_email}</span></td>
+          <td>${a.student_university_number}</td>
+          <td><strong>${a.score ?? '—'}</strong></td>
+          <td style="color:${a.violation_count > 0 ? '#d00' : '#060'};">${a.violation_count}</td>
+          <td><span class="status-badge ${sCls}">${a.status}</span></td>
+          <td style="font-size:11px;">${a.submitted_at ? new Date(a.submitted_at).toLocaleString() : '—'}</td>
+        </tr>`;
+      }).join('');
+
+      document.getElementById('attempts-container').className = '';
+      document.getElementById('attempts-container').innerHTML = `
+        <table class="attempts-table">
+          <thead><tr>
+            <th>Student</th><th>Univ. No.</th><th>Score</th><th>Violations</th><th>Status</th><th>Submitted</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    } catch (e) {
+      document.getElementById('attempts-container').className = 'empty';
+      document.getElementById('attempts-container').textContent = 'Failed to load attempts.';
+    }
+  }
+
+  loadQuizzes();
+</script>
+</body>
+</html>

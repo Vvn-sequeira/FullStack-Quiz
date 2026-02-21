@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz | AI-Proctored Quiz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --yellow:#FFE500; --pink:#FF3BFF; --cyan:#00D9FF; --lime:#00FF85; --black:#0a0a0a; --white:#FAFAFA; --shadow:6px 6px 0 var(--black); }
+    body { font-family:'Space Grotesk',sans-serif; background:var(--white); }
+
+    /* ─── Overlay screens ──────────────────────────────── */
+    .overlay { position:fixed; inset:0; z-index:1000; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; }
+    .overlay.hidden { display:none; }
+
+    /* Setup Screen */
+    #setup-screen { background:var(--black); }
+    .setup-card { border:4px solid var(--white); box-shadow:8px 8px 0 var(--yellow); background:var(--black); max-width:520px; width:100%; }
+    .setup-header { background:var(--yellow); padding:24px 32px; border-bottom:4px solid var(--white); }
+    .setup-header h1 { font-size:26px; font-weight:800; text-transform:uppercase; letter-spacing:-1px; color:var(--black); }
+    .setup-body { padding:32px; }
+    .rule-list { list-style:none; display:flex; flex-direction:column; gap:14px; margin-bottom:28px; }
+    .rule-list li { display:flex; align-items:flex-start; gap:12px; color:var(--white); font-size:14px; font-weight:600; }
+    .rule-icon { font-size:18px; flex-shrink:0; }
+    .danger-rule { background:rgba(255,59,255,0.15); border:2px solid var(--pink); padding:8px 12px; color:var(--pink) !important; font-weight:800 !important; }
+    .btn-fullscreen { width:100%; padding:16px; background:var(--lime); border:3px solid var(--white); font-family:inherit; font-size:16px; font-weight:800; text-transform:uppercase; letter-spacing:1px; cursor:pointer; box-shadow:6px 6px 0 var(--yellow); transition:all 0.1s; color:var(--black); }
+    .btn-fullscreen:hover { transform:translate(-3px,-3px); box-shadow:9px 9px 0 var(--yellow); }
+
+    /* Permission denied screen */
+    #perm-denied { background:var(--black); }
+    .denied-card { border:4px solid var(--pink); box-shadow:8px 8px 0 var(--pink); background:var(--black); max-width:400px; width:100%; padding:40px; text-align:center; }
+    .denied-card h2 { color:var(--pink); font-size:28px; font-weight:800; text-transform:uppercase; margin-bottom:16px; }
+    .denied-card p { color:var(--white); font-size:14px; font-weight:600; opacity:0.8; }
+
+    /* Result Screen */
+    #result-screen { background:var(--black); }
+    .result-card { border:4px solid var(--yellow); box-shadow:8px 8px 0 var(--yellow); background:var(--black); max-width:500px; width:100%; }
+    .result-header { padding:28px 32px; border-bottom:4px solid var(--yellow); }
+    .result-header h1 { font-size:20px; font-weight:800; text-transform:uppercase; color:var(--yellow); }
+    .result-body { padding:32px; }
+    .result-status { font-size:56px; font-weight:800; text-transform:uppercase; letter-spacing:-2px; margin-bottom:24px; }
+    .result-status.passed { color:var(--lime); }
+    .result-status.failed { color:var(--pink); }
+    .result-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:24px; }
+    .result-stat { border:3px solid; padding:14px; }
+    .result-stat.yellow { border-color:var(--yellow); }
+    .result-stat.cyan { border-color:var(--cyan); }
+    .result-stat.pink { border-color:var(--pink); }
+    .result-stat.lime { border-color:var(--lime); }
+    .result-stat-label { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:1.5px; color:#aaa; }
+    .result-stat-val { font-size:28px; font-weight:800; color:var(--white); }
+    .btn-home { display:block; width:100%; padding:14px; background:var(--yellow); border:3px solid var(--yellow); font-family:inherit; font-size:14px; font-weight:800; text-transform:uppercase; cursor:pointer; text-align:center; text-decoration:none; color:var(--black); box-shadow:6px 6px 0 var(--yellow); transition:all 0.1s; }
+    .btn-home:hover { transform:translate(-3px,-3px); box-shadow:9px 9px 0 var(--yellow); }
+
+    /* ─── Quiz UI ───────────────────────────────────────── */
+    #quiz-screen { display:none; flex-direction:column; height:100vh; overflow:hidden; }
+    #quiz-screen.visible { display:flex; }
+
+    /* Top bar */
+    .quiz-topbar { background:var(--black); border-bottom:4px solid var(--black); display:flex; align-items:center; justify-content:space-between; padding:0 24px; height:60px; flex-shrink:0; }
+    .quiz-title { color:var(--white); font-size:14px; font-weight:800; text-transform:uppercase; letter-spacing:1px; }
+    .quiz-timer { background:var(--yellow); border:3px solid var(--white); padding:6px 16px; font-size:22px; font-weight:800; letter-spacing:-1px; font-variant-numeric:tabular-nums; color:var(--black); }
+    .quiz-timer.urgent { background:var(--pink) !important; animation:pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.6;} }
+    .quiz-progress-text { color:var(--cyan); font-size:13px; font-weight:800; text-transform:uppercase; }
+
+    /* Violation banner */
+    .violation-banner { background:var(--pink); border-bottom:4px solid var(--black); padding:8px 24px; text-align:center; font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:1px; display:none; color:var(--black); }
+    .violation-banner.show { display:block; }
+
+    /* Body split */
+    .quiz-body { display:flex; flex:1; overflow:hidden; }
+
+    /* Questions pane */
+    .questions-pane { flex:1; overflow-y:auto; padding:28px 32px; }
+    .question-card { border:4px solid var(--black); padding:24px; margin-bottom:24px; box-shadow:var(--shadow); background:var(--white); }
+    .question-num { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:1.5px; color:#888; margin-bottom:8px; }
+    .question-text { font-size:18px; font-weight:700; margin-bottom:20px; line-height:1.5; }
+    .options-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .option-btn { padding:14px 16px; border:3px solid var(--black); background:var(--white); font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; text-align:left; transition:all 0.12s; display:flex; align-items:center; gap:10px; }
+    .option-btn:hover { background:#f0f0f0; transform:translate(-2px,-2px); box-shadow:4px 4px 0 var(--black); }
+    .option-btn.selected { background:var(--yellow); box-shadow:4px 4px 0 var(--black); transform:translate(-2px,-2px); }
+    .option-label { width:28px; height:28px; border:2px solid var(--black); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; flex-shrink:0; }
+
+    /* Sidebar */
+    .sidebar { width:260px; border-left:4px solid var(--black); display:flex; flex-direction:column; flex-shrink:0; background:var(--white); overflow:hidden; }
+    .sidebar-section { padding:16px; border-bottom:3px solid var(--black); }
+    .sidebar-title { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:1.5px; color:#888; margin-bottom:10px; }
+
+    /* Camera */
+    #cam-preview { width:100%; aspect-ratio:16/9; object-fit:cover; border:3px solid var(--black); background:#000; display:block; }
+    .cam-status { display:flex; align-items:center; gap:8px; margin-top:8px; font-size:11px; font-weight:800; text-transform:uppercase; }
+    .cam-dot { width:10px; height:10px; border-radius:50%; background:var(--lime); border:2px solid var(--black); }
+    .cam-dot.red { background:var(--pink); }
+    .mic-bar-wrap { margin-top:10px; }
+    .mic-bar-bg { height:10px; border:2px solid var(--black); background:#eee; overflow:hidden; }
+    .mic-bar-fill { height:100%; background:var(--lime); width:0%; transition:width 0.1s; }
+
+    /* Navigator */
+    .question-nav { padding:16px; flex:1; overflow-y:auto; }
+    .nav-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; }
+    .nav-btn { padding:8px 4px; border:2px solid var(--black); font-family:inherit; font-size:12px; font-weight:800; cursor:pointer; background:var(--white); text-align:center; transition:background 0.1s; }
+    .nav-btn.answered { background:var(--lime); }
+    .nav-btn.current { background:var(--yellow); }
+
+    /* Submit button */
+    .sidebar-footer { padding:16px; border-top:3px solid var(--black); }
+    .btn-submit { width:100%; padding:14px; background:var(--pink); border:3px solid var(--black); font-family:inherit; font-size:14px; font-weight:800; text-transform:uppercase; cursor:pointer; box-shadow:var(--shadow); transition:all 0.1s; color:var(--black); }
+    .btn-submit:hover { transform:translate(-3px,-3px); box-shadow:9px 9px 0 var(--black); }
+  </style>
+</head>
+<body>
+
+<!-- ─── Setup Screen ────────────────────────────────────────────────────── -->
+<div class="overlay" id="setup-screen">
+  <div class="setup-card">
+    <div class="setup-header">
+      <h1 id="quiz-setup-title">Loading Quiz...</h1>
+      <div style="font-size:13px;font-weight:700;margin-top:6px;color:#333;" id="quiz-setup-meta"></div>
+    </div>
+    <div class="setup-body">
+      <ul class="rule-list">
+        <li><span class="rule-icon">📷</span> <span>Webcam <strong style="color:var(--yellow)">must be ON</strong> throughout the quiz</span></li>
+        <li class="danger-rule"><span class="rule-icon">🚫</span> <span>Switching tabs = <strong>INSTANT FAIL</strong></span></li>
+        <li class="danger-rule"><span class="rule-icon">🚫</span> <span>Closing this tab = <strong>INSTANT FAIL</strong></span></li>
+        <li><span class="rule-icon">🖥️</span> <span>Fullscreen is enforced. Exiting counts as a violation</span></li>
+        <li><span class="rule-icon">🎙️</span> <span>Microphone is monitored for unusual noise</span></li>
+        <li><span class="rule-icon">⚡</span> <span>More than 1 violation = <strong style="color:var(--pink)">FAIL</strong></span></li>
+        <li><span class="rule-icon">⏱️</span> <span>Timer auto-submits when time runs out</span></li>
+      </ul>
+      <button class="btn-fullscreen" id="start-btn" onclick="startQuiz()">
+        ⚡ I Understand — Start Quiz
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Permission Denied ──────────────────────────────────────────────── -->
+<div class="overlay hidden" id="perm-denied">
+  <div class="denied-card">
+    <h2>📷 Camera Required</h2>
+    <p>Camera and microphone access are required to take this quiz.<br><br>Please allow permissions and reload the page.</p>
+  </div>
+</div>
+
+<!-- ─── Quiz UI ────────────────────────────────────────────────────────── -->
+<div id="quiz-screen">
+  <div class="quiz-topbar">
+    <div class="quiz-title" id="quiz-title-bar">Quiz</div>
+    <div class="quiz-timer" id="timer">00:00</div>
+    <div class="quiz-progress-text" id="progress-text">Q 0/0</div>
+  </div>
+  <div class="violation-banner" id="violation-banner">⚠️ Violation detected! 1 warning remaining.</div>
+  <div class="quiz-body">
+    <!-- Questions -->
+    <div class="questions-pane" id="questions-pane">Loading...</div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">📷 Camera</div>
+        <video id="cam-preview" autoplay muted playsinline></video>
+        <div class="cam-status">
+          <div class="cam-dot" id="cam-dot"></div>
+          <span id="cam-label">Camera Active</span>
+        </div>
+        <div class="mic-bar-wrap">
+          <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:4px;">🎙 Noise Level</div>
+          <div class="mic-bar-bg"><div class="mic-bar-fill" id="mic-bar"></div></div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Questions</div>
+        <div class="nav-grid" id="question-nav"></div>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="btn-submit" id="submit-btn" onclick="confirmSubmit()">
+          Submit Quiz ✓
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Result Screen ──────────────────────────────────────────────────── -->
+<div class="overlay hidden" id="result-screen">
+  <div class="result-card">
+    <div class="result-header">
+      <h1>Quiz Result</h1>
+      <div style="font-size:13px;font-weight:700;color:rgba(255,229,0,0.6);margin-top:4px;" id="result-quiz-title"></div>
+    </div>
+    <div class="result-body">
+      <div class="result-status" id="result-status-text">—</div>
+      <div class="result-grid">
+        <div class="result-stat yellow">
+          <div class="result-stat-label">Score</div>
+          <div class="result-stat-val" id="result-score">—</div>
+        </div>
+        <div class="result-stat cyan">
+          <div class="result-stat-label">Rank</div>
+          <div class="result-stat-val" id="result-rank">—</div>
+        </div>
+        <div class="result-stat pink">
+          <div class="result-stat-label">Violations</div>
+          <div class="result-stat-val" id="result-violations">—</div>
+        </div>
+        <div class="result-stat lime">
+          <div class="result-stat-label">Time Taken</div>
+          <div class="result-stat-val" id="result-time">—</div>
+        </div>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.5);margin-bottom:20px;text-transform:uppercase;">📧 Results sent to your email</div>
+      <a href="leaderboard.html" class="btn-home" id="result-leaderboard-btn">View Leaderboard →</a>
+      <a href="dashboard.html" class="btn-home" style="margin-top:10px;background:transparent;color:var(--yellow);box-shadow:none;border-color:rgba(255,229,0,0.3);">← Back to Dashboard</a>
+    </div>
+  </div>
+</div>
+
+<script src="js/proctoring.js"></script>
+<script src="js/quiz.js"></script>
+</body>
+</html>

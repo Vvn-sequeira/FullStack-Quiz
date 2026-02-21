@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard | AI-Proctored Quiz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --yellow: #FFE500; --pink: #FF3BFF; --cyan: #00D9FF; --lime: #00FF85;
+      --black: #0a0a0a; --white: #FAFAFA;
+      --shadow: 6px 6px 0 var(--black); --shadow-lg: 8px 8px 0 var(--black);
+    }
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--white);
+      min-height: 100vh;
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(0,0,0,0.05) 39px, rgba(0,0,0,0.05) 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(0,0,0,0.05) 39px, rgba(0,0,0,0.05) 40px);
+    }
+
+    /* ── Navbar ── */
+    nav {
+      background: var(--black);
+      border-bottom: 4px solid var(--black);
+      padding: 0 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .nav-brand { color: var(--yellow); font-size: 22px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.5px; }
+    .nav-brand span { color: var(--pink); }
+    .nav-right { display: flex; align-items: center; gap: 16px; }
+    .nav-user { color: var(--white); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    .nav-badge { background: var(--cyan); color: var(--black); font-size: 10px; font-weight: 800; padding: 3px 8px; text-transform: uppercase; letter-spacing: 1px; border: 2px solid var(--black); }
+    .btn-logout { background: var(--pink); border: 3px solid var(--black); padding: 8px 16px; font-family: inherit; font-size: 12px; font-weight: 800; cursor: pointer; text-transform: uppercase; box-shadow: 3px 3px 0 var(--black); transition: all 0.1s; color: var(--black); }
+    .btn-logout:hover { transform: translate(-2px,-2px); box-shadow: 5px 5px 0 var(--black); }
+    .btn-leaderboard { background: var(--yellow); border: 3px solid var(--black); padding: 8px 14px; font-family: inherit; font-size: 12px; font-weight: 800; cursor: pointer; text-transform: uppercase; box-shadow: 3px 3px 0 var(--black); text-decoration: none; color: var(--black); }
+    .btn-leaderboard:hover { transform: translate(-2px,-2px); box-shadow: 5px 5px 0 var(--black); }
+
+    /* ── Main layout (vertically centered) ── */
+    main {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 60px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── Welcome ── */
+    .welcome {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .welcome h1 {
+      font-size: 36px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: -2px;
+      line-height: 1.1;
+    }
+    .welcome h1 span { color: var(--pink); }
+    .welcome p {
+      font-size: 14px;
+      font-weight: 600;
+      color: #555;
+      margin-top: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* ── Stats row (2 cards only) ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      width: 100%;
+      margin-bottom: 40px;
+    }
+    .stat-card { border: 4px solid var(--black); padding: 20px 24px; box-shadow: var(--shadow); }
+    .stat-card.yellow { background: var(--yellow); }
+    .stat-card.lime { background: var(--lime); }
+    .stat-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: #444; }
+    .stat-value { font-size: 28px; font-weight: 800; margin-top: 6px; letter-spacing: -1px; }
+
+    /* ── Code Entry Card ── */
+    .code-card {
+      width: 100%;
+      border: 4px solid var(--black);
+      box-shadow: var(--shadow-lg);
+      background: var(--white);
+      overflow: hidden;
+    }
+
+    .code-card-header {
+      background: var(--black);
+      padding: 22px 28px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .code-icon { font-size: 32px; }
+    .code-card-header h2 {
+      color: var(--yellow);
+      font-size: 20px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+    }
+    .code-card-header p {
+      color: rgba(255,255,255,0.55);
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 3px;
+    }
+
+    .code-card-body { padding: 28px; }
+
+    .code-input-wrap {
+      display: flex;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .code-input {
+      flex: 1;
+      padding: 16px 20px;
+      border: 3px solid var(--black);
+      background: var(--white);
+      font-family: 'Space Grotesk', monospace;
+      font-size: 22px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 6px;
+      outline: none;
+      transition: box-shadow 0.15s;
+      text-align: center;
+      color: var(--black);
+    }
+    .code-input:focus { box-shadow: var(--shadow); }
+    .code-input::placeholder {
+      color: #ccc;
+      letter-spacing: 3px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .btn-join {
+      padding: 16px 28px;
+      background: var(--lime);
+      border: 3px solid var(--black);
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: all 0.1s;
+      white-space: nowrap;
+      color: var(--black);
+    }
+    .btn-join:hover { transform: translate(-2px,-2px); box-shadow: 8px 8px 0 var(--black); }
+    .btn-join:active { transform: translate(2px,2px); box-shadow: 3px 3px 0 var(--black); }
+    .btn-join:disabled { background: #ccc; cursor: not-allowed; transform: none; box-shadow: 3px 3px 0 var(--black); }
+
+    .code-hint {
+      margin-top: 14px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-align: center;
+    }
+
+    /* ── Error / Success message ── */
+    .code-msg {
+      margin-top: 16px;
+      padding: 12px 16px;
+      border: 3px solid var(--black);
+      font-size: 13px;
+      font-weight: 800;
+      display: none;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .code-msg.show { display: block; }
+    .code-msg.error { background: var(--pink); }
+    .code-msg.success { background: var(--lime); }
+
+    /* ── Preview card (shown after code lookup) ── */
+    .quiz-preview {
+      margin-top: 20px;
+      border: 4px solid var(--black);
+      padding: 22px 24px;
+      box-shadow: var(--shadow);
+      background: var(--yellow);
+      display: none;
+      animation: slideDown 0.3s ease;
+    }
+    .quiz-preview.show { display: block; }
+    .quiz-preview-title { font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.5px; }
+    .quiz-preview-meta { font-size: 13px; font-weight: 600; color: #444; margin-top: 6px; text-transform: uppercase; }
+    .btn-start-quiz {
+      display: block;
+      margin-top: 16px;
+      padding: 13px 24px;
+      background: var(--black);
+      color: var(--white);
+      border: 3px solid var(--black);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-align: center;
+      text-decoration: none;
+      box-shadow: 4px 4px 0 #333;
+      transition: all 0.1s;
+      cursor: pointer;
+    }
+    .btn-start-quiz:hover { background: var(--lime); color: var(--black); box-shadow: 4px 4px 0 var(--black); }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">Quiz<span>AI</span></div>
+  <div class="nav-right">
+    <div class="nav-user" id="nav-name">—</div>
+    <div class="nav-badge">Student</div>
+    <a href="leaderboard.html" class="btn-leaderboard">🏆 Leaders</a>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<main>
+  <!-- Welcome -->
+  <div class="welcome">
+    <h1>Hello, <span id="welcome-name">Student</span>!</h1>
+    <p>Enter your quiz code below to begin</p>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="stats-row">
+    <div class="stat-card yellow">
+      <div class="stat-label">University No.</div>
+      <div class="stat-value" id="stat-univ" style="font-size:18px; margin-top:8px;">—</div>
+    </div>
+    <div class="stat-card lime">
+      <div class="stat-label">Status</div>
+      <div class="stat-value" style="font-size:18px; margin-top:8px;">Ready ✓</div>
+    </div>
+  </div>
+
+  <!-- Code Entry -->
+  <div class="code-card">
+    <div class="code-card-header">
+      <div class="code-icon">🔑</div>
+      <div>
+        <h2>Enter Quiz Code</h2>
+        <p>Your teacher will give you a unique code</p>
+      </div>
+    </div>
+    <div class="code-card-body">
+      <div class="code-input-wrap">
+        <input
+          type="text"
+          class="code-input"
+          id="quiz-code-input"
+          placeholder="QZ-XXXXXX"
+          maxlength="9"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="btn-join" id="join-btn" onclick="joinByCode()">Join →</button>
+      </div>
+      <div class="code-hint">Format: QZ-XXXXXX &nbsp;•&nbsp; Case insensitive</div>
+
+      <div class="code-msg" id="code-msg"></div>
+
+      <!-- Quiz Preview (appears after valid code) -->
+      <div class="quiz-preview" id="quiz-preview">
+        <div class="quiz-preview-title" id="preview-title">—</div>
+        <div class="quiz-preview-meta" id="preview-meta">—</div>
+        <a href="#" class="btn-start-quiz" id="start-quiz-btn">🚀 Start Quiz Now →</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const API = "http://localhost:8000";
+  const token = localStorage.getItem('token');
+  const role  = localStorage.getItem('role');
+  const name  = localStorage.getItem('name');
+  const univ  = localStorage.getItem('univ');
+
+  if (!token || role !== 'student') window.location.href = 'login.html';
+
+  document.getElementById('nav-name').textContent = name || '—';
+  document.getElementById('welcome-name').textContent = name || 'Student';
+  document.getElementById('stat-univ').textContent   = univ || '—';
+
+  function authHeaders() {
+    return { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
+  }
+
+  function logout() {
+    localStorage.clear();
+    window.location.href = 'login.html';
+  }
+
+  function showMsg(msg, type) {
+    const el = document.getElementById('code-msg');
+    el.textContent = msg;
+    el.className = 'code-msg show ' + type;
+  }
+
+  function hideMsg() {
+    document.getElementById('code-msg').className = 'code-msg';
+    document.getElementById('quiz-preview').className = 'quiz-preview';
+  }
+
+  // Auto-format: uppercase, allow only A-Z 0-9 and hyphen
+  document.getElementById('quiz-code-input').addEventListener('input', function () {
+    let v = this.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    this.value = v;
+    hideMsg();
+  });
+
+  // Enter key support
+  document.getElementById('quiz-code-input').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') joinByCode();
+  });
+
+  async function joinByCode() {
+    const code = document.getElementById('quiz-code-input').value.trim().toUpperCase();
+    const btn  = document.getElementById('join-btn');
+
+    if (!code) {
+      showMsg('⚠️ Please enter a quiz code!', 'error');
+      return;
+    }
+
+    btn.textContent = '...';
+    btn.disabled = true;
+    hideMsg();
+
+    try {
+      const res  = await fetch(`${API}/quiz/by-code/${encodeURIComponent(code)}`, { headers: authHeaders() });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.detail || 'Invalid code');
+
+      // Show preview
+      document.getElementById('preview-title').textContent = data.title;
+      document.getElementById('preview-meta').textContent =
+        `⏱ ${data.duration_minutes} Minutes  •  Code: ${code}`;
+      document.getElementById('start-quiz-btn').href = `quiz.html?id=${data.quiz_id}`;
+      document.getElementById('quiz-preview').className = 'quiz-preview show';
+      showMsg('✅ Quiz found! Click the button below to start.', 'success');
+
+    } catch (e) {
+      showMsg('❌ ' + e.message, 'error');
+    } finally {
+      btn.textContent = 'Join →';
+      btn.disabled = false;
+    }
+  }
+</script>
+</body>
+</html>

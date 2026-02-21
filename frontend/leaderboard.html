@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leaderboard | AI-Proctored Quiz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --yellow: #FFE500; --pink: #FF3BFF; --cyan: #00D9FF; --lime: #00FF85;
+      --black: #0a0a0a; --white: #FAFAFA;
+      --shadow: 6px 6px 0 var(--black);
+    }
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--white);
+      min-height: 100vh;
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(0,0,0,0.05) 39px, rgba(0,0,0,0.05) 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(0,0,0,0.05) 39px, rgba(0,0,0,0.05) 40px);
+    }
+
+    /* ── Nav ── */
+    nav { background: var(--black); border-bottom: 4px solid var(--black); padding: 0 32px; display: flex; align-items: center; justify-content: space-between; height: 64px; }
+    .nav-brand { color: var(--yellow); font-size: 22px; font-weight: 800; text-transform: uppercase; }
+    .nav-brand span { color: var(--pink); }
+    .nav-links { display: flex; gap: 12px; }
+    .nav-link { color: var(--white); font-size: 12px; font-weight: 800; text-transform: uppercase; text-decoration: none; padding: 8px 16px; border: 2px solid rgba(255,255,255,0.2); transition: all 0.1s; }
+    .nav-link:hover { border-color: var(--yellow); color: var(--yellow); }
+
+    main { max-width: 900px; margin: 40px auto; padding: 0 24px; }
+
+    .page-header { margin-bottom: 32px; }
+    .page-header h1 { font-size: 40px; font-weight: 800; text-transform: uppercase; letter-spacing: -2px; }
+    .page-header p { font-size: 13px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-top: 6px; }
+
+    /* ── Quiz selector ── */
+    .quiz-select-wrap { margin-bottom: 20px; display: flex; gap: 0; border: 3px solid var(--black); box-shadow: var(--shadow); }
+    .quiz-select-wrap select { flex: 1; padding: 13px 16px; border: none; font-family: inherit; font-size: 15px; font-weight: 700; background: var(--white); outline: none; cursor: pointer; border-right: 3px solid var(--black); }
+    .btn-load { padding: 13px 24px; background: var(--cyan); border: none; font-family: inherit; font-size: 14px; font-weight: 800; text-transform: uppercase; cursor: pointer; transition: all 0.1s; white-space: nowrap; }
+    .btn-load:hover { background: #00c4e8; }
+
+    /* ── Search bar ── */
+    .search-wrap { margin-bottom: 20px; display: none; border: 3px solid var(--black); box-shadow: var(--shadow); }
+    .search-wrap.visible { display: flex; }
+    .search-icon { background: var(--black); color: var(--yellow); padding: 0 16px; font-size: 18px; display: flex; align-items: center; flex-shrink: 0; }
+    .search-input { flex: 1; padding: 13px 16px; border: none; font-family: inherit; font-size: 15px; font-weight: 700; background: var(--white); outline: none; color: var(--black); }
+    .search-input::placeholder { color: #bbb; font-weight: 500; }
+    .search-count { background: #f0f0f0; border-left: 3px solid var(--black); padding: 13px 16px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #555; display: flex; align-items: center; white-space: nowrap; flex-shrink: 0; }
+
+    /* ── Podium ── */
+    .podium-wrap { display: none; margin-bottom: 32px; }
+    .podium { display: flex; align-items: flex-end; justify-content: center; gap: 12px; height: 160px; }
+    .podium-item { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+    .podium-label { font-size: 24px; margin-bottom: 4px; }
+    .podium-name { font-size: 12px; font-weight: 800; text-transform: uppercase; max-width: 90px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 2px; }
+    .podium-score { font-size: 11px; font-weight: 700; color: #666; margin-bottom: 6px; }
+    .podium-block { width: 80px; border: 4px solid var(--black); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; box-shadow: var(--shadow); }
+    .podium-block.first  { background: var(--yellow); height: 120px; }
+    .podium-block.second { background: var(--cyan);   height: 90px;  }
+    .podium-block.third  { background: var(--lime);   height: 70px;  }
+
+    /* ── Table ── */
+    .lb-table { width: 100%; border-collapse: collapse; border: 4px solid var(--black); box-shadow: var(--shadow); }
+    .lb-table th { background: var(--black); color: var(--yellow); padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; }
+    .lb-table td { padding: 12px 16px; border-bottom: 2px solid #e8e8e8; font-size: 14px; font-weight: 600; }
+    .lb-table tr:last-child td { border-bottom: none; }
+    .lb-table tr:nth-child(even) td { background: #f7f7f7; }
+    .lb-table tr.highlight td { background: rgba(255,229,0,0.25) !important; }
+    .lb-table tr[style*="display: none"] { display: none !important; }
+
+    .rank-cell { font-size: 20px; font-weight: 800; }
+    .r1 { color: #E6A800; }
+    .r2 { color: #00B8D4; }
+    .r3 { color: #00C853; }
+
+    .you-tag { font-size: 10px; background: var(--yellow); padding: 1px 6px; font-weight: 800; border: 2px solid var(--black); margin-left: 6px; vertical-align: middle; }
+
+    .status-badge { display: inline-block; padding: 3px 10px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; border: 2px solid var(--black); }
+    .status-badge.passed { background: var(--lime); }
+    .status-badge.failed { background: var(--pink); }
+
+    /* ── States ── */
+    .empty-state { border: 4px dashed #ccc; padding: 48px; text-align: center; margin-top: 8px; }
+    .empty-state p { font-size: 15px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 1px; }
+    .loader { text-align: center; padding: 40px; font-weight: 800; font-size: 14px; text-transform: uppercase; color: #888; letter-spacing: 2px; }
+
+    .no-match {
+      text-align: center;
+      padding: 28px;
+      font-size: 14px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #999;
+      border: 3px dashed #ccc;
+      margin-top: 8px;
+      display: none;
+    }
+    .no-match.show { display: block; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">Quiz<span>AI</span></div>
+  <div class="nav-links">
+    <a href="dashboard.html" class="nav-link" id="back-link">← Dashboard</a>
+    <a href="login.html" class="nav-link" onclick="localStorage.clear()">Logout</a>
+  </div>
+</nav>
+
+<main>
+  <div class="page-header">
+    <h1>🏆 Leaderboard</h1>
+    <p>Top performers — ranked by score &amp; time taken</p>
+  </div>
+
+  <!-- Quiz selector -->
+  <div class="quiz-select-wrap">
+    <select id="quiz-select">
+      <option value="">— Select a quiz —</option>
+    </select>
+    <button class="btn-load" onclick="loadLeaderboard()">Load →</button>
+  </div>
+
+  <!-- Search (visible after leaderboard loads) -->
+  <div class="search-wrap" id="search-wrap">
+    <div class="search-icon">🔍</div>
+    <input
+      type="text"
+      class="search-input"
+      id="search-input"
+      placeholder="Search by name or university ID..."
+      autocomplete="off"
+    />
+    <div class="search-count" id="search-count">0 total</div>
+  </div>
+
+  <!-- Podium -->
+  <div class="podium-wrap" id="podium-wrap">
+    <div class="podium" id="podium"></div>
+  </div>
+
+  <!-- Leaderboard table / states -->
+  <div id="lb-area" class="loader">Select a quiz above to view rankings</div>
+  <div class="no-match" id="no-match">No students match "<span id="no-match-query"></span>"</div>
+</main>
+
+<script>
+  const API   = 'http://localhost:8000';
+  const token = localStorage.getItem('token');
+  const role  = localStorage.getItem('role');
+  const myUniv = localStorage.getItem('univ');
+
+  if (!token) window.location.href = 'login.html';
+  if (role === 'teacher') {
+    document.getElementById('back-link').href = 'admin.html';
+    document.getElementById('back-link').textContent = '← Admin';
+  }
+
+  function authH() { return { 'Authorization': 'Bearer ' + token }; }
+
+  // ── Load quiz titles into dropdown ───────────────────────
+  async function loadQuizTitles() {
+    try {
+      const res  = await fetch(`${API}/quiz/titles`, { headers: authH() });
+      const data = await res.json();
+      const sel  = document.getElementById('quiz-select');
+      (data.quizzes || []).forEach(q => {
+        const opt = document.createElement('option');
+        opt.value = q._id;
+        opt.textContent = q.title;
+        sel.appendChild(opt);
+      });
+
+      // Auto-select if quiz ID in URL
+      const urlQid = new URLSearchParams(window.location.search).get('quiz');
+      if (urlQid) {
+        sel.value = urlQid;
+        loadLeaderboard();
+      }
+    } catch (e) {
+      console.error('Failed to load quiz titles:', e);
+    }
+  }
+
+  // ── Load leaderboard for selected quiz ───────────────────
+  async function loadLeaderboard() {
+    const qid = document.getElementById('quiz-select').value;
+    if (!qid) return;
+
+    // Reset UI
+    document.getElementById('lb-area').className = 'loader';
+    document.getElementById('lb-area').textContent = 'Loading...';
+    document.getElementById('podium-wrap').style.display = 'none';
+    document.getElementById('search-wrap').classList.remove('visible');
+    document.getElementById('search-input').value = '';
+    document.getElementById('no-match').classList.remove('show');
+
+    try {
+      const res  = await fetch(`${API}/quiz/${qid}/leaderboard`, { headers: authH() });
+      const data = await res.json();
+      const lb   = data.leaderboard || [];
+
+      if (lb.length === 0) {
+        document.getElementById('lb-area').className = '';
+        document.getElementById('lb-area').innerHTML =
+          `<div class="empty-state"><p>No submissions yet for this quiz.</p></div>`;
+        return;
+      }
+
+      renderPodium(lb);
+      renderTable(lb);
+
+      // Show search
+      document.getElementById('search-wrap').classList.add('visible');
+      document.getElementById('search-count').textContent = lb.length + ' total';
+      attachSearch();
+
+    } catch (e) {
+      document.getElementById('lb-area').className = '';
+      document.getElementById('lb-area').innerHTML =
+        `<div class="empty-state"><p>Failed to load leaderboard. Is the server running?</p></div>`;
+    }
+  }
+
+  // ── Podium ───────────────────────────────────────────────
+  function renderPodium(lb) {
+    const top3 = lb.slice(0, 3);
+    const podiumEl = document.getElementById('podium');
+
+    // Visual order: 2nd | 1st | 3rd
+    const order   = top3.length >= 3 ? [top3[1], top3[0], top3[2]]
+                  : top3.length === 2 ? [top3[1], top3[0]]
+                  : [top3[0]];
+    const classes = top3.length >= 3 ? ['second','first','third']
+                  : top3.length === 2 ? ['second','first']
+                  : ['first'];
+    const medals  = { first:'🥇', second:'🥈', third:'🥉' };
+
+    podiumEl.innerHTML = order.map((p, i) => {
+      const cls = classes[i];
+      return `
+        <div class="podium-item">
+          <div class="podium-label">${medals[cls]}</div>
+          <div class="podium-name">${p.name}</div>
+          <div class="podium-score">Score: ${p.score}</div>
+          <div class="podium-block ${cls}">#${p.rank}</div>
+        </div>`;
+    }).join('');
+
+    document.getElementById('podium-wrap').style.display = 'block';
+  }
+
+  // ── Table ────────────────────────────────────────────────
+  function renderTable(lb) {
+    const rows = lb.map(e => {
+      const isMe     = e.university_number === myUniv;
+      const rankCls  = e.rank === 1 ? 'r1' : e.rank === 2 ? 'r2' : e.rank === 3 ? 'r3' : '';
+      const statusCls= e.status === 'PASSED' ? 'passed' : 'failed';
+      const mins = Math.floor(e.time_taken_seconds / 60);
+      const secs = e.time_taken_seconds % 60;
+      return `<tr class="${isMe ? 'highlight' : ''}"
+                  data-name="${e.name.toLowerCase()}"
+                  data-univ="${e.university_number.toLowerCase()}">
+        <td class="rank-cell ${rankCls}">#${e.rank}</td>
+        <td>
+          <strong>${e.name}</strong>
+          ${isMe ? '<span class="you-tag">YOU</span>' : ''}
+        </td>
+        <td>${e.university_number}</td>
+        <td><strong>${e.score}</strong></td>
+        <td>${mins}m ${secs}s</td>
+        <td>${e.violation_count}</td>
+        <td><span class="status-badge ${statusCls}">${e.status}</span></td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('lb-area').className = '';
+    document.getElementById('lb-area').innerHTML = `
+      <table class="lb-table" id="lb-table">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Name</th>
+            <th>Univ. ID</th>
+            <th>Score</th>
+            <th>Time</th>
+            <th>Violations</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="lb-tbody">${rows}</tbody>
+      </table>`;
+  }
+
+  // ── Live Search ──────────────────────────────────────────
+  function attachSearch() {
+    const input = document.getElementById('search-input');
+    // Remove any old listener
+    input.oninput = null;
+    input.oninput = doSearch;
+    // Auto-focus
+    input.focus();
+  }
+
+  function doSearch() {
+    const query   = document.getElementById('search-input').value.trim().toLowerCase();
+    const tbody   = document.getElementById('lb-tbody');
+    if (!tbody) return;
+
+    const rows = tbody.querySelectorAll('tr');
+    let visible = 0;
+
+    rows.forEach(row => {
+      const name = row.getAttribute('data-name') || '';
+      const univ = row.getAttribute('data-univ') || '';
+
+      // Match if query is empty OR matches name OR matches university ID
+      const match = !query || name.includes(query) || univ.includes(query);
+
+      row.style.display = match ? '' : 'none';
+      if (match) visible++;
+    });
+
+    // Update count badge
+    const countEl = document.getElementById('search-count');
+    countEl.textContent = query
+      ? `${visible} result${visible !== 1 ? 's' : ''}`
+      : `${rows.length} total`;
+
+    // No match message
+    const noMatch = document.getElementById('no-match');
+    if (query && visible === 0) {
+      document.getElementById('no-match-query').textContent = query;
+      noMatch.classList.add('show');
+    } else {
+      noMatch.classList.remove('show');
+    }
+  }
+
+  // ── Boot ─────────────────────────────────────────────────
+  loadQuizTitles();
+</script>
+</body>
+</html>
