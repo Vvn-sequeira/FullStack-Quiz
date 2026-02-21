@@ -3,7 +3,7 @@
  * Main quiz logic: load questions, timer, answers, submission, violations
  */
 
-const API = "http://localhost:8000";
+const API = "https://fullstack-quiz-mhq2.onrender.com";
 const token = localStorage.getItem('token');
 const role  = localStorage.getItem('role');
 
